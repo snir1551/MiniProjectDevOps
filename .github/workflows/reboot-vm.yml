@@ -1,0 +1,29 @@
+name: Reboot Azure VM Task9
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      vm_ip:
+        required: true
+        type: string
+
+jobs:
+  reboot-vm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Write SSH Key
+        run: |
+          echo "${{ secrets.VM_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Reboot VM
+        run: |
+          echo "Rebooting the Azure VM..."
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "sudo reboot" || true
+          echo "Waiting 90 seconds for VM to reboot..."
+          sleep 90
+
+      - name: Cleanup SSH Key
+        run: rm key.pem

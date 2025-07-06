@@ -1,0 +1,41 @@
+name: Post-Reboot Healthcheck on App Ports Task9
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      vm_ip:
+        required: true
+        type: string
+  
+
+jobs:
+  check-access:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check HTTP access on port 3000 (Frontend)
+        run: |
+          echo "Checking http://${{ inputs.vm_ip }}:3000 ..." > access-check.log
+          if curl --fail --silent http://${{ inputs.vm_ip }}:3000; then
+            echo "Port 3000 is accessible." >> access-check.log
+          else
+            echo "Port 3000 is NOT accessible." >> access-check.log
+            exit 1
+          fi
+
+      - name: Check HTTP access on port 8080 (Backend)
+        run: |
+          echo "Checking http://${{ inputs.vm_ip }}:8080 ..." >> access-check.log
+          if curl --fail --silent http://${{ inputs.vm_ip }}:8080; then
+            echo "Port 8080 is accessible." >> access-check.log
+          else
+            echo "Port 8080 is NOT accessible." >> access-check.log
+            exit 1
+          fi
+
+      - name: Upload access check log
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-reboot-healthcheck-log
+          path: access-check.log

@@ -1,0 +1,53 @@
+name: Terraform Backend Setup
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  setup-backend:
+    name: Create Storage Account + Container for Terraform State
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Backend Storage Resources
+        run: |
+          RESOURCE_GROUP="mtc-resources"
+          STORAGE_ACCOUNT="mtcstatetf" # MUST be globally unique
+          CONTAINER_NAME="tfstate"
+          LOCATION="israelcentral"
+
+          echo "Checking for existing resource group..."
+          az group show --name $RESOURCE_GROUP || \
+          az group create --name $RESOURCE_GROUP --location $LOCATION
+
+          echo "Checking for existing storage account..."
+          az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP || \
+          az storage account create \
+            --name $STORAGE_ACCOUNT \
+            --resource-group $RESOURCE_GROUP \
+            --location $LOCATION \
+            --sku Standard_LRS \
+
+          echo "Getting storage account key..."
+          ACCOUNT_KEY=$(az storage account keys list \
+            --resource-group $RESOURCE_GROUP \
+            --account-name $STORAGE_ACCOUNT \
+            --query '[0].value' -o tsv)
+
+          echo "Checking for existing container..."
+          az storage container show \
+            --name $CONTAINER_NAME \
+            --account-name $STORAGE_ACCOUNT \
+            --account-key $ACCOUNT_KEY || \
+          az storage container create \
+            --name $CONTAINER_NAME \
+            --account-name $STORAGE_ACCOUNT \
+            --account-key $ACCOUNT_KEY
+
+          echo "Backend storage is ready for Terraform."

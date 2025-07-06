@@ -1,0 +1,83 @@
+name: CI/CD Pipeline Task9
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+
+  frontend-tests:
+    uses: ./.github/workflows/frontend-test.yml
+  
+  backend-tests:
+    uses: ./.github/workflows/backend-test.yml
+
+  docker-up:
+    needs: [frontend-tests, backend-tests]
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+
+  notify:
+    needs: [backend-tests, frontend-tests, docker-up]
+    if: always()
+    uses: ./.github/workflows/notify.yml
+    with:
+      job_start_time: ${{ needs.frontend-tests.outputs.job_start_time }}
+      backend_test_status: ${{ needs.backend-tests.result }}
+      frontend_test_status: ${{ needs.frontend-tests.result }}
+      backend_health: ${{ needs.docker-up.outputs.backend_health }}
+      frontend_health: ${{ needs.docker-up.outputs.frontend_health }}
+    secrets: inherit
+
+
+  terraform-remote-state-initialization:
+    needs: docker-up
+    uses: ./.github/workflows/terraform-remote-state-initialization.yml
+    secrets: inherit
+
+  deploy-infrastructure:
+    needs: [terraform-remote-state-initialization]
+    uses: ./.github/workflows/Deploy-Infrastructure.yml
+    secrets: inherit
+
+  deploy-app:
+    name: Deploy to Azure VM
+    needs: [deploy-infrastructure]
+    uses: ./.github/workflows/deploy-app.yml
+    with:
+      vm_ip: ${{ needs.terraform.outputs.vm_ip }}
+    secrets: inherit
+
+  # create-and-attach-disk:
+  #   needs: deploy
+  #   uses: ./.github/workflows/create-disk-attach-task9.yml
+  #   secrets: inherit
+
+  # check-static-ip:
+  #   needs: deploy
+  #   uses: ./.github/workflows/check-static-ip-task9.yml
+  #   secrets: inherit
+
+  # open-ports:
+  #   needs: deploy
+  #   uses: ./.github/workflows/open-ports-task9.yml
+  #   secrets: inherit
+
+  reboot-vm:
+    needs: [deploy-infrastructure]
+    uses: ./.github/workflows/reboot-vm.yml
+    with:
+      vm_ip: ${{ needs.terraform.outputs.vm_ip }}
+    secrets: inherit
+
+  post-reboot-healthcheck:
+    needs: [reboot-vm, deploy-infrastructure]
+    uses: ./.github/workflows/post-reboot-healthcheck.yml
+    with:
+      vm_ip: ${{ needs.terraform.outputs.vm_ip }}
+    secrets: inherit
+
+  # update-deployment-log:
+  #   needs: post-reboot-healthcheck
+  #   uses: ./.github/workflows/commit-deployment-log-task9.yml

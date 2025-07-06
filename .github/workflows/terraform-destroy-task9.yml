@@ -1,0 +1,50 @@
+name: Terraform Destroy Task9
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+      VM_SSH_KEY:
+        required: true
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: week9/week9_summery/Terraform
+    env:
+      ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+      ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+      ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+      ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Write SSH Private Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy
+        run: |
+          terraform destroy -auto-approve \
+            -var="ssh_public_key=$(ssh-keygen -y -f ~/.ssh/id_rsa)"

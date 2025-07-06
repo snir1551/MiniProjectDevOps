@@ -1,0 +1,124 @@
+name: Build
+
+on:
+  workflow_call:
+    outputs:
+      backend_health:
+        description: "Backend Health Status"
+        value: ${{ jobs.docker-up.outputs.backend_health }}
+      frontend_health:
+        description: "Frontend Health Status"
+        value: ${{ jobs.docker-up.outputs.frontend_health }}
+
+jobs:
+  docker-up:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: /app
+
+    outputs:
+      backend_health: ${{ steps.backend_health_check.outputs.health_status }}
+      frontend_health: ${{ steps.frontend_health_check.outputs.health_status }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE_TASK8 }}" > .env
+
+      - name: Docker Compose Up
+        run: docker compose -f docker-compose.yml up -d --build
+
+      - name: Wait for Backend to be healthy
+        id: backend_health_check
+        run: |
+          echo "Checking health for backend..."
+          SERVICE_NAME="backend"
+          CONTAINER_NAME=$(docker compose ps -q "$SERVICE_NAME")
+
+          if [ -z "$CONTAINER_NAME" ]; then
+            echo "No container found for service: $SERVICE_NAME"
+            exit 1
+          fi
+
+          echo "Detected container: $CONTAINER_NAME"
+          FINAL_HEALTH_STATUS="unknown"
+          max_retries=18
+
+          for i in $(seq 1 $max_retries); do
+            status=$(docker inspect "$CONTAINER_NAME" --format '{{.State.Health.Status}}' 2>/dev/null || echo "not_found")
+            echo "[$i/$max_retries] Status: $status"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+            if [ "$status" = "healthy" ]; then
+              FINAL_HEALTH_STATUS="healthy"
+              break
+            elif [ "$status" = "not_found" ]; then
+              echo "Not found. Retrying..."
+            else
+              echo "Waiting for health..."
+            fi
+
+            sleep 10
+          done
+
+          if [ "$FINAL_HEALTH_STATUS" != "healthy" ]; then
+            echo "$SERVICE_NAME did not become healthy in time."
+            docker logs "$CONTAINER_NAME"
+            exit 1
+          fi
+
+          echo "$SERVICE_NAME is healthy!"
+          echo "health_status=$FINAL_HEALTH_STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Frontend to be healthy
+        id: frontend_health_check
+        run: |
+          echo "Checking health for frontend..."
+          SERVICE_NAME="frontend"
+          CONTAINER_NAME=$(docker compose ps -q "$SERVICE_NAME")
+
+          if [ -z "$CONTAINER_NAME" ]; then
+            echo "No container found for service: $SERVICE_NAME"
+            exit 1
+          fi
+
+          echo "Detected container: $CONTAINER_NAME"
+          FINAL_HEALTH_STATUS="unknown"
+          max_retries=18
+
+          for i in $(seq 1 $max_retries); do
+            status=$(docker inspect "$CONTAINER_NAME" --format '{{.State.Health.Status}}' 2>/dev/null || echo "not_found")
+            echo "[$i/$max_retries] Status: $status"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+            if [ "$status" = "healthy" ]; then
+              FINAL_HEALTH_STATUS="healthy"
+              break
+            elif [ "$status" = "not_found" ]; then
+              echo "Not found. Retrying..."
+            else
+              echo "Waiting for health..."
+            fi
+
+            sleep 10
+          done
+
+          if [ "$FINAL_HEALTH_STATUS" != "healthy" ]; then
+            echo "$SERVICE_NAME did not become healthy in time."
+            docker logs "$CONTAINER_NAME"
+            exit 1
+          fi
+
+          echo "$SERVICE_NAME is healthy!"
+          echo "health_status=$FINAL_HEALTH_STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Docker Compose Down
+        if: always()
+        run: docker compose down -v
+
+      - name: Delete .env file
+        if: always()
+        run: rm -f .env
