@@ -1,0 +1,50 @@
+name: Check and Convert Public IP to Static Task9
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  check-static-ip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get Public IP Name
+        id: get_ip_name
+        run: |
+          RESOURCE_GROUP="mtc-resources"
+
+          IP_NAME=$(az network public-ip list \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "[0].name" -o tsv)
+
+          echo "IP_NAME=$IP_NAME" >> $GITHUB_ENV
+          echo "IP name found: $IP_NAME"
+
+      - name: Check and Update IP Allocation
+        run: |
+          RESOURCE_GROUP="mtc-resources"
+
+          ALLOCATION=$(az network public-ip show \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$IP_NAME" \
+            --query "publicIpAllocationMethod" -o tsv)
+
+          echo "Current IP allocation: $ALLOCATION"
+
+          if [ "$ALLOCATION" = "Dynamic" ]; then
+            echo "Changing allocation to Static..."
+            az network public-ip update \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$IP_NAME" \
+              --allocation-method Static
+            echo "Allocation changed to Static."
+          else
+            echo "Allocation already Static. No action needed."
+          fi
+
