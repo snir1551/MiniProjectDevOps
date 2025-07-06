@@ -20,7 +20,7 @@ jobs:
       vm_ip: ${{ steps.vm_ip.outputs.vm_ip }}
     defaults:
       run:
-        working-directory: /Terraform
+        working-directory: ./Terraform
     env:
       ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
       ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
@@ -100,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-deployment-log
-          path: week9/week9_summery/Terraform/deployment_log.md
+          path: ./Terraform/deployment_log.md
 
 
 
