@@ -53,6 +53,14 @@ jobs:
       - name: Debug SSH command
         run: echo "ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }}"
 
+      - name: Run setup script on VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} << 'EOF'
+            cd /home/azureuser/MiniProject/app/scripts
+            chmod +x setup.sh
+            ./setup.sh
+          EOF
+
       - name: Sync app folder to Azure VM
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "mkdir -p /home/azureuser/MiniProject/app"
