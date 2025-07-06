@@ -53,6 +53,11 @@ jobs:
       - name: Debug SSH command
         run: echo "ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }}"
 
+      - name: Sync app folder to Azure VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "mkdir -p /home/azureuser/MiniProject/app"
+          rsync -az --delete --exclude='.git' --exclude='node_modules' -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./app/ azureuser@${{ inputs.vm_ip }}:/home/azureuser/MiniProject/app/
+
       - name: Run setup script on VM
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} << 'EOF'
@@ -60,11 +65,6 @@ jobs:
             chmod +x setup.sh
             ./setup.sh
           EOF
-
-      - name: Sync app folder to Azure VM
-        run: |
-          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "mkdir -p /home/azureuser/MiniProject/app"
-          rsync -az --delete --exclude='.git' --exclude='node_modules' -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./app/ azureuser@${{ inputs.vm_ip }}:/home/azureuser/MiniProject/app/
 
       - name: Deploy with Docker Compose
         run: |
