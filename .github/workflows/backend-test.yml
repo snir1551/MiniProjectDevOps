@@ -57,4 +57,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-results-node${{ matrix.node-version }}
-          path: week8/week8_summery/app/backend/test-results.log
+          path: app/backend/test-results.log
