@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    # volumes:
+    #   - ./backend:/app
+    #   - /app/node_modules
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - appnet
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    # volumes:
+    #   - ./frontend:/app
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FRONTEND_PORT}"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - appnet
+
+  mongo:
+    image: mongo
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+    env_file:
+      - .env
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    networks:
+      - appnet
+
+volumes:
+  mongo-data:
+
+
+networks:
+  appnet:
+    driver: bridge
