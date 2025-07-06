@@ -38,7 +38,7 @@ jobs:
 
   deploy-infrastructure:
     needs: [terraform-remote-state-initialization]
-    uses: ./.github/workflows/Deploy-Infrastructure.yml
+    uses: ./.github/workflows/deploy-infrastructure.yml
     secrets: inherit
 
   deploy-app:
