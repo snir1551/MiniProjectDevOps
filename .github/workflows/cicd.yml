@@ -46,7 +46,7 @@ jobs:
     needs: [deploy-infrastructure]
     uses: ./.github/workflows/deploy-app.yml
     with:
-      vm_ip: ${{ needs.terraform.outputs.vm_ip }}
+      vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
     secrets: inherit
 
   # create-and-attach-disk:
