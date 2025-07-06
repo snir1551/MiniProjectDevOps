@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: /app
+        working-directory: ./app
 
     outputs:
       backend_health: ${{ steps.backend_health_check.outputs.health_status }}
@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create .env file
-        run: echo "${{ secrets.ENV_FILE_TASK8 }}" > .env
+        run: echo "${{ secrets.ENV_FILE }}" > .env
 
       - name: Docker Compose Up
         run: docker compose -f docker-compose.yml up -d --build
