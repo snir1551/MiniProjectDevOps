@@ -27,6 +27,8 @@ services:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     # volumes:
     #   - ./frontend:/app
+    env_file:
+      - .env
     depends_on:
       - backend
     healthcheck:
