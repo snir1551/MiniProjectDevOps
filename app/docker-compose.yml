@@ -3,8 +3,8 @@ version: "3.8"
 services:
   backend:
     build: ./backend
-    # ports:
-    #   - "${BACKEND_PORT}:${BACKEND_PORT}"
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     # volumes:
     #   - ./backend:/app
     #   - /app/node_modules
@@ -23,8 +23,8 @@ services:
 
   frontend:
     build: ./frontend
-    # ports:
-    #   - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     # volumes:
     #   - ./frontend:/app
     env_file:
