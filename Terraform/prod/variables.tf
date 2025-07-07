@@ -5,20 +5,13 @@ variable "resource_group" {
     name     = string
     location = string
   })
-  default = {
-    name     = "mtc-resources"
-    location = "Israel Central"
-  }
 }
 
+# Common Tags
 variable "common_tags" {
   description = "Tags applied to all resources"
   type        = map(string)
-  default = {
-    environment = "dev"
-  }
 }
-
 
 # Virtual Network
 variable "virtual_network" {
@@ -27,12 +20,7 @@ variable "virtual_network" {
     name          = string
     address_space = list(string)
   })
-  default = {
-    name          = "mtc-network"
-    address_space = ["10.123.0.0/16"]
-  }
 }
-
 
 # Subnet
 variable "subnet" {
@@ -41,12 +29,7 @@ variable "subnet" {
     name           = string
     address_prefix = list(string)
   })
-  default = {
-    name           = "mtc-subnet"
-    address_prefix = ["10.123.1.0/24"]
-  }
 }
-
 
 # Network Security Group
 variable "network_security_group" {
@@ -54,11 +37,9 @@ variable "network_security_group" {
   type = object({
     name = string
   })
-  default = {
-    name = "mtc-nsg"
-  }
 }
 
+# NSG Rules
 variable "nsg_rules" {
   description = "List of NSG security rules"
   type = list(object({
@@ -75,10 +56,6 @@ variable "public_ip" {
     name              = string
     allocation_method = string
   })
-  default = {
-    name              = "mtc-ip"
-    allocation_method = "Static"
-  }
 }
 
 # Network Interface
@@ -89,13 +66,9 @@ variable "network_interface" {
     ip_configuration_name = string
     private_ip_allocation = string
   })
-  default = {
-    name                  = "mtc-nic"
-    ip_configuration_name = "internal"
-    private_ip_allocation = "Dynamic"
-  }
 }
 
+# Virtual Machine
 variable "virtual_machine" {
   description = "Virtual machine configuration"
   type = object({
@@ -110,20 +83,9 @@ variable "virtual_machine" {
     disk_caching      = string
     disk_storage_type = string
   })
-  default = {
-    name              = "mtc-vm"
-    size              = "Standard_B1s"
-    admin_user        = "azureuser"
-    public_ip_name    = "mtc-ip"
-    public_ip_alloc   = "Static"
-    nic_name          = "mtc-nic"
-    ip_config_name    = "internal"
-    private_ip_alloc  = "Dynamic"
-    disk_caching      = "ReadWrite"
-    disk_storage_type = "Standard_LRS"
-  }
 }
 
+# SSH Public Key
 variable "ssh_public_key" {
   description = "SSH public key for VM"
   type        = string

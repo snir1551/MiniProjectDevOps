@@ -1,6 +1,6 @@
 resource_group = {
   name     = "prod-rg"
-  location = "westeurope"
+  location = "Israel Central"
 }
 
 common_tags = {
@@ -53,7 +53,7 @@ network_interface = {
 
 virtual_machine = {
   name              = "prod-vm"
-  size              = "Standard_B2s"
+  size              = "Standard_B1s"
   admin_user        = "azureuser"
   public_ip_name    = "prod-ip"
   public_ip_alloc   = "Static"
