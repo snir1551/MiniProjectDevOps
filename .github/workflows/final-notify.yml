@@ -1,0 +1,37 @@
+name: Final Notification
+
+on:
+  workflow_call:
+    inputs:
+      vm_ip:
+        required: true
+        type: string
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Frontend Port 3000
+        id: check
+        run: |
+          IP="http://${{ inputs.vm_ip }}:3000"
+          echo "Checking $IP ..."
+          if curl --fail --silent "$IP"; then
+            echo "status=Alive ($IP)" >> $GITHUB_OUTPUT
+          else
+            echo "status=Not Reachable ($IP)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "*Final Deployment Check*\n\n*Frontend:* `${{ steps.check.outputs.status }}`"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }
