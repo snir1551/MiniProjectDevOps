@@ -48,14 +48,14 @@ jobs:
     needs: docker-up
     uses: ./.github/workflows/terraform-remote-state-initialization.yml
     with:
-      environment: ${{ github.event.inputs.environment }}
+      environment: ${{ env.ENVIRONMENT }}
     secrets: inherit
 
   deploy-infrastructure:
     needs: [terraform-remote-state-initialization]
     uses: ./.github/workflows/deploy-infrastructure.yml
     with:
-      environment: ${{ github.event.inputs.environment }}
+      environment: ${{ env.ENVIRONMENT }}
     secrets: inherit
 
   deploy-app:
