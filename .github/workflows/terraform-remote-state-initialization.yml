@@ -3,6 +3,11 @@ name: Terraform Backend Setup
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+        environment:
+          description: "Environment (dev or prod)"
+          required: true
+          type: string
 
 jobs:
   setup-backend:
@@ -19,7 +24,7 @@ jobs:
         run: |
           RESOURCE_GROUP="mtc-resources"
           STORAGE_ACCOUNT="mtcstatetf" # MUST be globally unique
-          CONTAINER_NAME="tfstate"
+          CONTAINER_NAME="tfstate-${{ inputs.environment }}"
           LOCATION="israelcentral"
 
           echo "Checking for existing resource group..."
@@ -50,4 +55,4 @@ jobs:
             --account-name $STORAGE_ACCOUNT \
             --account-key $ACCOUNT_KEY
 
-          echo "Backend storage is ready for Terraform."
+          echo "Backend container for '${{ inputs.environment }}' environment is ready."
