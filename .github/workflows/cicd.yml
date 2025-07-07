@@ -4,6 +4,15 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+        environment:
+          description: "Choose environment"
+          required: true
+          default: dev
+          type: choice
+          options:
+            - dev
+            - prod
 
 jobs:
 
@@ -39,6 +48,8 @@ jobs:
   deploy-infrastructure:
     needs: [terraform-remote-state-initialization]
     uses: ./.github/workflows/deploy-infrastructure.yml
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
 
   deploy-app:
@@ -47,6 +58,7 @@ jobs:
     uses: ./.github/workflows/deploy-app.yml
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
+      environment: ${{ inputs.environment }}
     secrets: inherit
 
   # create-and-attach-disk:
