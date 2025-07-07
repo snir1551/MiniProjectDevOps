@@ -22,7 +22,7 @@ jobs:
           chmod 600 key.pem
 
       - name: Create .env file
-        run: echo "${{ secrets.ENV_FILE }}" > app/.env
+        run: echo "${{ secrets.ENV_FILE }}" >> app/.env
 
       # - name: Clean Docker on VM
       #   run: |
