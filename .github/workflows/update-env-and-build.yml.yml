@@ -1,0 +1,42 @@
+name: Deploy Frontend
+
+on:
+  workflow_call:
+    inputs:
+      vm_ip:
+        required: true
+        type: string
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app/frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Replace or create .env with VM IP
+        run: |
+          echo "REACT_APP_API_URL=http://${{ inputs.vm_ip }}:8080" > .env
+          echo ".env updated:"
+          cat .env
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the frontend
+        run: npm run build
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ./app/frontend/build
