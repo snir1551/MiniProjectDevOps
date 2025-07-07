@@ -83,14 +83,14 @@ jobs:
     needs: [deploy-infrastructure, deploy-app]
     uses: ./.github/workflows/reboot-vm.yml
     with:
-      vm_ip: ${{ needs.terraform.outputs.vm_ip }}
+      vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
     secrets: inherit
 
   post-reboot-healthcheck:
     needs: [deploy-infrastructure, reboot-vm]
     uses: ./.github/workflows/post-reboot-healthcheck.yml
     with:
-      vm_ip: ${{ needs.terraform.outputs.vm_ip }}
+      vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
     secrets: inherit
 
   # update-deployment-log:
