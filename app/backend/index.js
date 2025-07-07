@@ -21,8 +21,16 @@ client.connect()
   .then(() => {
     db = client.db(process.env.MONGO_DB || 'testdb');
     console.log('Connected to MongoDB');
+
+    // Start server only after DB connection
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running at http://0.0.0.0:${PORT}`);
+    });
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 
 app.get('/api/users', async (req, res) => {
@@ -81,9 +89,4 @@ app.post('/messages', async (req, res) => {
 
 app.get('/', (req, res) => {
   res.send('Hello from Backend!!!');
-});
-
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running at http://0.0.0.0:${PORT}`);
 });
