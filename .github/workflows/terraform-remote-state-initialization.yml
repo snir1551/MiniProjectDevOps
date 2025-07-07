@@ -13,6 +13,8 @@ jobs:
   setup-backend:
     name: Create Storage Account + Container for Terraform State
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
 
     steps:
       - name: Azure Login
