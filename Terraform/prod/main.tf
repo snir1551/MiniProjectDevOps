@@ -46,6 +46,8 @@ module "network" {
 
   public_ip         = var.public_ip
   network_interface = var.network_interface
+
+  nsg_rules         = var.nsg_rules
 }
 
 

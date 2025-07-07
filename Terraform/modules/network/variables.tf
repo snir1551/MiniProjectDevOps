@@ -29,9 +29,18 @@ variable "subnet" {
 
 variable "nsg" {
   type = object({
-    name      = string
-    rule_name = string
+    name = string
   })
+  description = "NSG configuration (name only)"
+}
+
+variable "nsg_rules" {
+  description = "List of NSG security rules"
+  type = list(object({
+    name             = string
+    priority         = number
+    destination_port = number
+  }))
 }
 
 variable "public_ip" {
