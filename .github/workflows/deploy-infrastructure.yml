@@ -2,6 +2,11 @@ name: Deploy-Infrastructure (Terraform)
 
 on:
   workflow_call:
+    inputs:
+        environment:
+          description: "Environment to deploy (dev/prod)"
+          required: true
+          type: string
     outputs:
       vm_ip:
         description: "Public IP of the VM"
@@ -20,7 +25,7 @@ jobs:
       vm_ip: ${{ steps.vm_ip.outputs.vm_ip }}
     defaults:
       run:
-        working-directory: ./Terraform
+        working-directory: ./Terraform/${{ inputs.environment }}
     env:
       ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
       ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
