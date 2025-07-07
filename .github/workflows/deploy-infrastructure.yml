@@ -75,7 +75,7 @@ jobs:
             echo "Resource group already managed in Terraform state. Skipping import."
           else
             echo "Checking if resource group exists in Azure..."
-            EXISTS=$(az group exists --name "$RG_NAME")
+            EXISTS=$(az group exists --resource-group "$RG_NAME")
             if [ "$EXISTS" == "true" ]; then
               echo "Resource group exists. Importing into Terraform state..."
               terraform import -input=false -lock=false \
