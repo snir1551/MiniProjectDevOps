@@ -14,8 +14,6 @@ on:
             - dev
             - prod
 
-env:
-  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
 
 
 jobs:
@@ -48,14 +46,14 @@ jobs:
     needs: docker-up
     uses: ./.github/workflows/terraform-remote-state-initialization.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
     secrets: inherit
 
   deploy-infrastructure:
     needs: [terraform-remote-state-initialization]
     uses: ./.github/workflows/deploy-infrastructure.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
     secrets: inherit
 
   deploy-app:
