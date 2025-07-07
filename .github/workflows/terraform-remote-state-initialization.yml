@@ -24,7 +24,7 @@ jobs:
         run: |
           RESOURCE_GROUP="mtc-resources"
           STORAGE_ACCOUNT="mtcstatetf" # MUST be globally unique
-          CONTAINER_NAME="tfstate-${{ inputs.environment }}"
+          CONTAINER_NAME="tfstate-${ENVIRONMENT}"
           LOCATION="israelcentral"
 
           echo "Checking for existing resource group..."
