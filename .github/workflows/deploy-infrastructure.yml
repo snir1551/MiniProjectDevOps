@@ -66,7 +66,7 @@ jobs:
 
       - name: Conditionally Import Resource Group
         run: |
-          RG_NAME="mtc-resources"
+          RG_NAME="${ENVIRONMENT}-rg"
           SUB_ID="${{ env.ARM_SUBSCRIPTION_ID }}"
           MODULE_PATH="module.resource_group.azurerm_resource_group.this"
 
