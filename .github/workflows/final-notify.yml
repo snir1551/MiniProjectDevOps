@@ -34,4 +34,4 @@ jobs:
               "text": "*Final Deployment Check*\n\n*Frontend:* `${{ steps.check.outputs.status }}`"
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
