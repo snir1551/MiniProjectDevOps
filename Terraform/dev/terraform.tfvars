@@ -28,14 +28,9 @@ nsg_rules = [
     destination_port = 22
   },
   {
-    name             = "allow-frontend"
+    name             = "allow-http"
     priority         = 110
-    destination_port = 3000
-  },
-  {
-    name             = "allow-backend"
-    priority         = 120
-    destination_port = 8080
+    destination_port = 80
   }
 ]
 
