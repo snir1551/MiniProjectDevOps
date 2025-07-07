@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   workflow_call:
     inputs:
-        environment:
-          description: "Environment (dev or prod)"
-          required: true
-          type: string
+      environment:
+        description: "Environment (dev/prod)"
+        required: true
+        type: string
 
 jobs:
   setup-backend:
