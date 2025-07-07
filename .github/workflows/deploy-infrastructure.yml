@@ -91,22 +91,25 @@ jobs:
         run: |
           RG_NAME="${ENVIRONMENT}-rg"
           SUB_ID="${{ env.ARM_SUBSCRIPTION_ID }}"
+          SSH_KEY="${{ steps.ssh.outputs.ssh_public_key }}"
 
           declare -A RESOURCES=(
             ["module.network.azurerm_virtual_network.this"]="/subscriptions/$SUB_ID/resourceGroups/$RG_NAME/providers/Microsoft.Network/virtualNetworks/${ENVIRONMENT}-vnet"
+            ["module.network.azurerm_subnet.this"]="/subscriptions/$SUB_ID/resourceGroups/$RG_NAME/providers/Microsoft.Network/virtualNetworks/${ENVIRONMENT}-vnet/subnets/${ENVIRONMENT}-subnet"
             ["module.network.azurerm_network_security_group.this"]="/subscriptions/$SUB_ID/resourceGroups/$RG_NAME/providers/Microsoft.Network/networkSecurityGroups/${ENVIRONMENT}-nsg"
             ["module.network.azurerm_public_ip.this"]="/subscriptions/$SUB_ID/resourceGroups/$RG_NAME/providers/Microsoft.Network/publicIPAddresses/${ENVIRONMENT}-ip"
           )
 
+          echo "🔄 Starting conditional import of network resources..."
           for MODULE_PATH in "${!RESOURCES[@]}"; do
-            RESOURCE_ID="${RESOURCES[$MODULE_PATH]}"
-
             echo "🔍 Checking $MODULE_PATH in state..."
             if terraform state list | grep -q "$MODULE_PATH"; then
-              echo "✅ $MODULE_PATH already in state."
+              echo "✅ $MODULE_PATH already in state. Skipping."
             else
               echo "📦 Importing $MODULE_PATH from Azure..."
-              terraform import -input=false -lock=false "$MODULE_PATH" "$RESOURCE_ID"
+              terraform import -input=false -lock=false \
+                -var="ssh_public_key=${SSH_KEY}" \
+                "$MODULE_PATH" "${RESOURCES[$MODULE_PATH]}"
             fi
           done
 
