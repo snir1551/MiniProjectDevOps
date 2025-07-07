@@ -20,19 +20,22 @@ resource "azurerm_network_security_group" "this" {
   tags                = var.tags
 }
 
-resource "azurerm_network_security_rule" "this" {
-  name                        = var.nsg.rule_name
-  priority                    = 100
+resource "azurerm_network_security_rule" "rules" {
+  for_each = { for rule in var.nsg_rules : rule.name => rule }
+
+  name                        = each.value.name
+  priority                    = each.value.priority
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "*"
   source_port_range           = "*"
-  destination_port_ranges     = ["22"]
+  destination_port_ranges     = [each.value.destination_port]
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
   resource_group_name         = var.resource_group_name
   network_security_group_name = azurerm_network_security_group.this.name
 }
+
 
 resource "azurerm_subnet_network_security_group_association" "this" {
   subnet_id                 = azurerm_subnet.this.id
