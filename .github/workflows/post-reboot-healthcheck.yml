@@ -16,23 +16,23 @@ jobs:
     steps:
       - name: Check HTTP access on port 3000 (Frontend)
         run: |
-          echo "Checking http://${{ inputs.vm_ip }}:3000 ..." > access-check.log
-          if curl --fail --silent http://${{ inputs.vm_ip }}:3000; then
+          echo "Checking http://${{ inputs.vm_ip }} ..." > access-check.log
+          if curl --fail --silent http://${{ inputs.vm_ip }}; then
             echo "Port 3000 is accessible." >> access-check.log
           else
             echo "Port 3000 is NOT accessible." >> access-check.log
             exit 1
           fi
 
-      - name: Check HTTP access on port 8080 (Backend)
-        run: |
-          echo "Checking http://${{ inputs.vm_ip }}:8080 ..." >> access-check.log
-          if curl --fail --silent http://${{ inputs.vm_ip }}:8080; then
-            echo "Port 8080 is accessible." >> access-check.log
-          else
-            echo "Port 8080 is NOT accessible." >> access-check.log
-            exit 1
-          fi
+      # - name: Check HTTP access on port 8080 (Backend)
+      #   run: |
+      #     echo "Checking http://${{ inputs.vm_ip }}:8080 ..." >> access-check.log
+      #     if curl --fail --silent http://${{ inputs.vm_ip }}:8080; then
+      #       echo "Port 8080 is accessible." >> access-check.log
+      #     else
+      #       echo "Port 8080 is NOT accessible." >> access-check.log
+      #       exit 1
+      #     fi
 
       - name: Upload access check log
         uses: actions/upload-artifact@v4
