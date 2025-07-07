@@ -18,13 +18,13 @@ provider "azurerm" {
 
 
 module "resource_group" {
-  source         = "./modules/resource_group"
+  source         = "../modules/resource_group"
   resource_group = var.resource_group
   tags           = var.common_tags
 }
 
 module "network" {
-  source              = "./modules/network"
+  source              = "../modules/network"
   resource_group_name = module.resource_group.resource_group_name
   location            = module.resource_group.resource_group_location
   tags                = var.common_tags
@@ -52,7 +52,7 @@ module "network" {
 
 
 module "vm" {
-  source               = "./modules/vm"
+  source               = "../modules/vm"
   resource_group_name  = module.resource_group.resource_group_name
   location             = module.resource_group.resource_group_location
   subnet_id            = module.network.subnet_id
