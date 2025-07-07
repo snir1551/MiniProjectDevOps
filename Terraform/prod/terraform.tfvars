@@ -21,6 +21,25 @@ network_security_group = {
   name = "prod-nsg"
 }
 
+nsg_rules = [
+  {
+    name             = "allow-ssh"
+    priority         = 100
+    destination_port = 22
+  },
+  {
+    name             = "allow-frontend"
+    priority         = 110
+    destination_port = 3000
+  },
+  {
+    name             = "allow-backend"
+    priority         = 120
+    destination_port = 8080
+  }
+]
+
+
 public_ip = {
   name              = "prod-ip"
   allocation_method = "Static"

@@ -21,6 +21,25 @@ network_security_group = {
   name = "dev-nsg"
 }
 
+nsg_rules = [
+  {
+    name             = "allow-ssh"
+    priority         = 100
+    destination_port = 22
+  },
+  {
+    name             = "allow-frontend"
+    priority         = 110
+    destination_port = 3000
+  },
+  {
+    name             = "allow-backend"
+    priority         = 120
+    destination_port = 8080
+  }
+]
+
+
 public_ip = {
   name              = "dev-ip"
   allocation_method = "Static"
@@ -44,3 +63,4 @@ virtual_machine = {
   disk_caching      = "ReadWrite"
   disk_storage_type = "Standard_LRS"
 }
+
