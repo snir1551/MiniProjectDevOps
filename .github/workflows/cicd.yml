@@ -43,6 +43,8 @@ jobs:
   terraform-remote-state-initialization:
     needs: docker-up
     uses: ./.github/workflows/terraform-remote-state-initialization.yml
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
 
   deploy-infrastructure:
@@ -58,7 +60,6 @@ jobs:
     uses: ./.github/workflows/deploy-app.yml
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
-      environment: ${{ inputs.environment }}
     secrets: inherit
 
   # create-and-attach-disk:
