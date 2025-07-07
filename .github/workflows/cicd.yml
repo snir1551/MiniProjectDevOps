@@ -79,26 +79,26 @@ jobs:
   #   uses: ./.github/workflows/open-ports-task9.yml
   #   secrets: inherit
 
-  reboot-vm:
-    needs: [deploy-infrastructure, deploy-app]
-    uses: ./.github/workflows/reboot-vm.yml
-    with:
-      vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
-    secrets: inherit
+  # reboot-vm:
+  #   needs: [deploy-infrastructure, deploy-app]
+  #   uses: ./.github/workflows/reboot-vm.yml
+  #   with:
+  #     vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
+  #   secrets: inherit
 
-  post-reboot-healthcheck:
-    needs: [deploy-infrastructure, reboot-vm]
-    uses: ./.github/workflows/post-reboot-healthcheck.yml
-    with:
-      vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
-    secrets: inherit
+  # post-reboot-healthcheck:
+  #   needs: [deploy-infrastructure, reboot-vm]
+  #   uses: ./.github/workflows/post-reboot-healthcheck.yml
+  #   with:
+  #     vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
+  #   secrets: inherit
 
-  final-notify:
-    needs: [deploy-infrastructure, post-reboot-healthcheck]
-    uses: ./.github/workflows/final-notify.yml
-    with:
-      vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
-    secrets: inherit
+  # final-notify:
+  #   needs: [deploy-infrastructure, post-reboot-healthcheck]
+  #   uses: ./.github/workflows/final-notify.yml
+  #   with:
+  #     vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
+  #   secrets: inherit
 
   # update-deployment-log:
   #   needs: post-reboot-healthcheck
