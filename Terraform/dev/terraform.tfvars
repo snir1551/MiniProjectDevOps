@@ -1,6 +1,6 @@
 resource_group = {
   name     = "dev-rg"
-  location = "eastus"
+  location = "Israel Central"
 }
 
 common_tags = {
