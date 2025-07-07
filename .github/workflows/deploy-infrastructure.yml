@@ -87,6 +87,29 @@ jobs:
             fi
           fi
 
+      - name: Conditionally Import Existing Network Resources
+        run: |
+          RG_NAME="${ENVIRONMENT}-rg"
+          SUB_ID="${{ env.ARM_SUBSCRIPTION_ID }}"
+
+          declare -A RESOURCES=(
+            ["module.network.azurerm_virtual_network.this"]="/subscriptions/$SUB_ID/resourceGroups/$RG_NAME/providers/Microsoft.Network/virtualNetworks/${ENVIRONMENT}-vnet"
+            ["module.network.azurerm_network_security_group.this"]="/subscriptions/$SUB_ID/resourceGroups/$RG_NAME/providers/Microsoft.Network/networkSecurityGroups/${ENVIRONMENT}-nsg"
+            ["module.network.azurerm_public_ip.this"]="/subscriptions/$SUB_ID/resourceGroups/$RG_NAME/providers/Microsoft.Network/publicIPAddresses/${ENVIRONMENT}-ip"
+          )
+
+          for MODULE_PATH in "${!RESOURCES[@]}"; do
+            RESOURCE_ID="${RESOURCES[$MODULE_PATH]}"
+
+            echo "🔍 Checking $MODULE_PATH in state..."
+            if terraform state list | grep -q "$MODULE_PATH"; then
+              echo "✅ $MODULE_PATH already in state."
+            else
+              echo "📦 Importing $MODULE_PATH from Azure..."
+              terraform import -input=false -lock=false "$MODULE_PATH" "$RESOURCE_ID"
+            fi
+          done
+
       - name: Terraform Apply
         run: |
           echo '## terraform apply' >> deployment_log.md
