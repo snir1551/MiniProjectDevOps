@@ -24,7 +24,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "${{ secrets.ENV_FILE }}" > app/.env
-          echo "REACT_APP_API_URL=http://${{ inputs.vm_ip }}:8080" >> .env
+          echo "REACT_APP_API_URL=http://${{ inputs.vm_ip }}:8080" >> app/.env
 
       # - name: Clean Docker on VM
       #   run: |
