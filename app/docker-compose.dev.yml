@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  backend:
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend:
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    volumes:
+      - ./frontend:/app
+    command: npm start
+
+  mongo:
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
