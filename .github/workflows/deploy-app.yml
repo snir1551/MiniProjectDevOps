@@ -7,6 +7,10 @@ on:
       vm_ip:
         required: true
         type: string
+      environment:
+        description: "Environment (dev/prod)"
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -26,31 +30,31 @@ jobs:
           echo "${{ secrets.ENV_FILE }}" > app/.env
           echo "REACT_APP_API_URL=http://${{ inputs.vm_ip }}:8080" >> app/.env
 
-      # - name: Clean Docker on VM
-      #   run: |
-      #     ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
-      #       echo 'Cleaning Docker environment...'
+      - name: Clean Docker on VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
+            echo 'Cleaning Docker environment...'
 
-      #       containers=\$(docker ps -q)
-      #       if [ -n \"\$containers\" ]; then
-      #         echo 'Stopping running containers...'
-      #         docker stop \$containers
-      #       else
-      #         echo 'No running containers to stop.'
-      #       fi
+            containers=\$(docker ps -q)
+            if [ -n \"\$containers\" ]; then
+              echo 'Stopping running containers...'
+              docker stop \$containers
+            else
+              echo 'No running containers to stop.'
+            fi
 
-      #       sudo docker container prune -f
-      #       sudo docker image prune -af
-      #       sudo docker network prune -f
+            sudo docker container prune -f
+            sudo docker image prune -af
+            sudo docker network prune -f
 
-      #       volumes=\$(docker volume ls -q)
-      #       if [ -n \"\$volumes\" ]; then
-      #         echo 'Removing all Docker volumes...'
-      #         docker volume rm \$volumes
-      #       else
-      #         echo 'No Docker volumes to remove.'
-      #       fi
-      #     "
+            volumes=\$(docker volume ls -q)
+            if [ -n \"\$volumes\" ]; then
+              echo 'Removing all Docker volumes...'
+              docker volume rm \$volumes
+            else
+              echo 'No Docker volumes to remove.'
+            fi
+          "
 
       - name: Debug SSH command
         run: echo "ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }}"
@@ -69,11 +73,13 @@ jobs:
           EOF
 
       - name: Deploy with Docker Compose
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
             cd /home/azureuser/MiniProject/app &&
-            sudo docker-compose down --remove-orphans &&
-            sudo docker-compose up -d --build
+            sudo docker-compose -f docker-compose.yml -f docker-compose.${ENVIRONMENT}.yml down --remove-orphans
+            sudo docker-compose -f docker-compose.yml -f docker-compose.${ENVIRONMENT}.yml up -d --build
           "
 
       - name: Healthcheck and get logs
