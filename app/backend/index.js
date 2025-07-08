@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import User from './User.js';
+import User from './models/User.js';
 import cors from 'cors';
 import { MongoClient, ObjectId } from 'mongodb';
 
@@ -21,16 +21,8 @@ client.connect()
   .then(() => {
     db = client.db(process.env.MONGO_DB || 'testdb');
     console.log('Connected to MongoDB');
-
-    // Start server only after DB connection
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running at http://0.0.0.0:${PORT}`);
-    });
   })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+  .catch(err => console.error('MongoDB connection error:', err));
 
 
 app.get('/api/users', async (req, res) => {
@@ -89,4 +81,9 @@ app.post('/messages', async (req, res) => {
 
 app.get('/', (req, res) => {
   res.send('Hello from Backend!!!');
+});
+
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${PORT}`);
 });
