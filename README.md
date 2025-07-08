@@ -1469,6 +1469,150 @@ networks:
     driver: bridge
 ```
 
+This docker-compose.yml defines a multi-service Docker application including a frontend, backend, and MongoDB service.
+
+##### Version:
+```
+version: "3.8"
+```
+- Specifies the Compose file format version.
+- Version 3.8 is compatible with modern Docker features and widely supported.
+
+##### backend service:
+```
+  backend:
+    build: ./backend
+```
+- Builds the Docker image from the ./backend folder using its Dockerfile.
+
+```
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+```
+- Maps the backend port from container to host using a .env variable (e.g., 8080:8080).
+
+```
+    env_file:
+      - .env
+```
+- Loads environment variables from .env file into the container.
+
+```
+    depends_on:
+      - mongo
+```
+- Ensures the mongo container starts before backend.
+
+```
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+```
+- Checks the backend health by sending a request to localhost:${BACKEND_PORT} every 30s.
+
+```
+restart: unless-stopped
+```
+- Automatically restarts the container unless it was explicitly stopped.
+
+```
+    networks:
+      - appnet
+```
+- Connects the service to the shared appnet network.
+
+
+###### frontend service
+
+```
+  frontend:
+    build: ./frontend
+```
+- Builds the Docker image from the ./frontend folder.
+
+```
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+```
+- Maps the frontend port from container to host using a .env variable (e.g., 3000:3000).
+
+```
+    depends_on:
+      - backend
+```
+- Ensures the backend starts before the frontend.
+
+```
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FRONTEND_PORT}"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+```
+- Waits 40s before starting health checks; checks if frontend is reachable.
+
+```
+    restart: unless-stopped
+    networks:
+      - appnet
+```
+- Auto-restarts unless stopped and joins appnet network.
+
+
+##### mongo service
+
+```
+  mongo:
+    image: mongo
+```
+- Uses the official mongo image from Docker Hub.
+
+```
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+```
+- Exposes MongoDB on a host port defined in .env (e.g., 27017:27017).
+
+```
+    env_file:
+      - .env
+```
+- Loads environment variables for MongoDB if needed (e.g., MONGO_INITDB_ROOT_USERNAME).
+
+```
+    volumes:
+      - mongo-data:/data/db
+```
+Uses a named volume (mongo-data) to persist MongoDB data between restarts.
+
+```
+    restart: unless-stopped
+    networks:
+      - appnet
+```
+- Ensures MongoDB runs reliably and is connected to the shared app network.
+
+##### Volumes
+
+```
+volumes:
+  mongo-data:
+```
+- Named volume to persist MongoDB data outside the container lifecycle.
+
+
+##### Networks
+
+```
+networks:
+  appnet:
+    driver: bridge
+```
+- Defines a custom bridge network for isolated communication between services.
+
 </details>
 
 
