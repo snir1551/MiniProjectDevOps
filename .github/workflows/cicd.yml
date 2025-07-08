@@ -27,6 +27,8 @@ jobs:
   docker-up:
     needs: [frontend-tests, backend-tests]
     uses: ./.github/workflows/build.yml
+    with:
+      environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
     secrets: inherit
 
   notify:
