@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Wait before checking ports
-        run: sleep 30
         
       - name: Check HTTP access on port 3000 (Frontend)
         run: |
