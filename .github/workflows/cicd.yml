@@ -65,9 +65,8 @@ jobs:
     secrets: inherit
 
 
-
   reboot-vm:
-    needs: [deploy-infrastructure]
+    needs: [deploy-infrastructure, deploy-app]
     uses: ./.github/workflows/reboot-vm.yml
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
