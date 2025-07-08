@@ -117,7 +117,7 @@ jobs:
 
       - name: Docker Compose Down
         if: always()
-        run: docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 
       - name: Delete .env file
         if: always()
