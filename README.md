@@ -47,3 +47,23 @@ This project demonstrates a complete DevOps workflow for deploying a fullstack w
 │   └── setup_vm.sh         # Bash automation
 ├── deployment_log.md       # Logged CLI outputs
 └── README.md
+
+
+## Architecture Flow Diagram
+
+## Infrastructure as Code
+
+```
+
+```
+
+## Docker & Compose
+
+
+## CI/CD Pipeline
+
+## Healthchecks & Automation
+
+## Logging & Documentation
+
+## Resilience Check 
