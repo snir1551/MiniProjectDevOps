@@ -66,19 +66,15 @@ jobs:
 
 
   before-reboot-healthcheck:
-    needs: [deploy-infrastructure]
+    needs: [deploy-infrastructure, deploy-app]
     uses: ./.github/workflows/post-reboot-healthcheck.yml
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
     secrets: inherit
-  # check-static-ip:
-  #   needs: deploy
-  #   uses: ./.github/workflows/check-static-ip-task9.yml
-  #   secrets: inherit
 
 
   reboot-vm:
-    needs: [deploy-infrastructure, deploy-app]
+    needs: [deploy-infrastructure, before-reboot-healthcheck]
     uses: ./.github/workflows/reboot-vm.yml
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
