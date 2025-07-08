@@ -32,6 +32,11 @@ This project demonstrates how to provision and manage real-world infrastructure 
 
 ## Steps Overview
 
+### Architecture Flow Diagram 
+
+![miniproject drawio (1)](https://github.com/user-attachments/assets/f7e913ba-7935-4103-a661-c7366b1697a1)
+
+
 
 ### Infrastructure as Code
 
@@ -1617,6 +1622,13 @@ networks:
 
 
 ### CI/CD Pipeline
+
+```
+https://github.com/snir1551/MiniProjectDevOps/blob/main/.github/workflows/cicd.yml
+```
+
+![image](https://github.com/user-attachments/assets/270aaab6-40b0-4bd0-8190-18ea236ebfd6)
+
 
 
 ### Healthchecks & Automation
