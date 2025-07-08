@@ -2,6 +2,11 @@ name: Build
 
 on:
   workflow_call:
+    inputs:
+          environment:
+            description: "Environment to deploy (dev/prod)"
+            required: true
+            type: string
     outputs:
       backend_health:
         description: "Backend Health Status"
@@ -16,6 +21,9 @@ jobs:
     defaults:
       run:
         working-directory: ./app
+        
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
 
     outputs:
       backend_health: ${{ steps.backend_health_check.outputs.health_status }}
@@ -29,7 +37,7 @@ jobs:
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
       - name: Docker Compose Up
-        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+        run: docker compose -f docker-compose.yml -f docker-compose.${ENVIRONMENT}.yml up -d --build
 
       - name: Wait for Backend to be healthy
         id: backend_health_check
@@ -117,7 +125,7 @@ jobs:
 
       - name: Docker Compose Down
         if: always()
-        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.${ENVIRONMENT}.yml down -v
 
       - name: Delete .env file
         if: always()
