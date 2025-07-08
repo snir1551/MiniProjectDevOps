@@ -1,4 +1,4 @@
-name: Reboot Azure VM Task9
+name: Reboot Azure VM
 
 on:
   workflow_dispatch:
