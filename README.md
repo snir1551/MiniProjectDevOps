@@ -1232,7 +1232,8 @@ jobs:
 
 #### Screenshot
 
-![image](https://github.com/user-attachments/assets/7ce7e78a-392d-4831-bcb7-8affadb9c9df)
+![image](https://github.com/user-attachments/assets/96b0e0f0-1111-46c9-8184-dc5f2e46874c)
+
 
 
 
