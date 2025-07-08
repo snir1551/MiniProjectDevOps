@@ -30,6 +30,11 @@ This project demonstrates how to provision and manage real-world infrastructure 
 │   └── vm/
 ```
 
+## Steps Overview
+
+
+### Infrastructure as Code
+
 <details> 
 <summary>modules/resouce_group/main.tf</summary>
 
@@ -1029,21 +1034,442 @@ terraform {
 }
 ```
 
-
-## Steps Overview
-
-### Infrastructure as Code
+GitHub Actions Workflows:
 
 <details> 
-<summary>code view</summary>
+<summary>terraform-remote-state-initialization</summary>
 
-[DevOps & Agile methodology](https://github.com/snir1551/DevOps-Linux/wiki/What-is-DevOps-and-Agile-methodology)
+```
+name: Terraform Backend Setup
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Environment (dev/prod)"
+        required: true
+        type: string
+
+jobs:
+  setup-backend:
+    name: Create Storage Account + Container for Terraform State
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Backend Storage Resources
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          echo "ENVIRONMENT: $ENVIRONMENT"
+          echo "CONTAINER_NAME: tfstate-${ENVIRONMENT}"
+          RESOURCE_GROUP="${ENVIRONMENT}-rg"
+          STORAGE_ACCOUNT="mtcstatetf" # MUST be globally unique
+          CONTAINER_NAME="tfstate-${ENVIRONMENT}"
+          LOCATION="israelcentral"
+
+          echo "Checking for existing resource group..."
+          az group show --name $RESOURCE_GROUP || \
+          az group create --name $RESOURCE_GROUP --location $LOCATION
+
+          echo "Checking for existing storage account..."
+          az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP || \
+          az storage account create \
+            --name $STORAGE_ACCOUNT \
+            --resource-group $RESOURCE_GROUP \
+            --location $LOCATION \
+            --sku Standard_LRS \
+
+          echo "Getting storage account key..."
+          ACCOUNT_KEY=$(az storage account keys list \
+            --resource-group $RESOURCE_GROUP \
+            --account-name $STORAGE_ACCOUNT \
+            --query '[0].value' -o tsv)
+
+          echo "Checking for existing container..."
+          az storage container show \
+            --name $CONTAINER_NAME \
+            --account-name $STORAGE_ACCOUNT \
+            --account-key $ACCOUNT_KEY || \
+          az storage container create \
+            --name $CONTAINER_NAME \
+            --account-name $STORAGE_ACCOUNT \
+            --account-key $ACCOUNT_KEY
+
+          echo "Backend container for '${{ inputs.environment }}' environment is ready."
+```
 
 </details>
+
+<details> 
+<summary>deploy-infrastructure.yml</summary>
+
+```
+name: Deploy-Infrastructure (Terraform)
+
+on:
+  workflow_call:
+    inputs:
+        environment:
+          description: "Environment to deploy (dev/prod)"
+          required: true
+          type: string
+    outputs:
+      vm_ip:
+        description: "Public IP of the VM"
+        value: ${{ jobs.terraform.outputs.vm_ip }}
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+      VM_SSH_KEY:
+        required: true
+
+jobs:
+  terraform:
+    name: Terraform Setup
+    runs-on: ubuntu-latest
+    outputs:
+      vm_ip: ${{ steps.vm_ip.outputs.vm_ip }}
+    defaults:
+      run:
+        working-directory: ./Terraform/${{ inputs.environment }}
+    env:
+      ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+      ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+      ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+      ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+      ENVIRONMENT: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Azure Login (CLI)
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Write SSH Private Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Derive SSH Public Key
+        id: ssh
+        run: |
+          ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
+          echo "ssh_public_key=$(cat ~/.ssh/id_rsa.pub)" >> "$GITHUB_OUTPUT"
+
+      - name: Terraform Init
+        run: |
+          echo '## terraform init' >> deployment_log.md
+          echo "Initializing Terraform..." >> deployment_log.md
+          terraform init 2>&1 | tee -a deployment_log.md
+
+      - name: Conditionally Import Resource Group
+        run: |
+          RG_NAME="${ENVIRONMENT}-rg"
+          SUB_ID="${{ env.ARM_SUBSCRIPTION_ID }}"
+          MODULE_PATH="module.resource_group.azurerm_resource_group.this"
+
+          echo "Checking if resource group is already in Terraform state..."
+          if terraform state list | grep -q "$MODULE_PATH"; then
+            echo "Resource group already managed in Terraform state. Skipping import."
+          else
+            echo "Checking if resource group exists in Azure..."
+            EXISTS=$(az group exists --resource-group "$RG_NAME")
+            if [ "$EXISTS" == "true" ]; then
+              echo "Resource group exists. Importing into Terraform state..."
+              terraform import -input=false -lock=false \
+                -var="ssh_public_key=${{ steps.ssh.outputs.ssh_public_key }}" \
+                "$MODULE_PATH" "/subscriptions/$SUB_ID/resourceGroups/$RG_NAME"
+            else
+              echo "Resource group does not exist. Terraform will create it during apply."
+            fi
+          fi
+
+
+      - name: Terraform Apply
+        run: |
+          echo '## terraform apply' >> deployment_log.md
+          echo "Applying Terraform configuration..." >> deployment_log.md
+          terraform apply -auto-approve \
+            -var="ssh_public_key=${{ steps.ssh.outputs.ssh_public_key }}" 2>&1 | tee -a deployment_log.md
+
+      - name: Terraform Output
+        id: vm_ip
+        run: |
+          echo '## terraform output' >> deployment_log.md
+          IP=$(terraform output -raw public_ip_address)
+          echo "Public IP from Terraform: $IP" | tee -a deployment_log.md
+          echo "vm_ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Upload Terraform Deployment Log
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-deployment-log
+          path: ./Terraform/deployment_log.md
+```
+
+</details>
+
+#### Screenshot
+
+![image](https://github.com/user-attachments/assets/7ce7e78a-392d-4831-bcb7-8affadb9c9df)
 
 
 
 ### Docker & Compose
+
+#### App Project Structure
+```
+app/
+├── backend/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── src/
+│       └── index.ts
+│
+├── frontend/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── src/
+│       └── main.tsx
+│
+├── scripts/
+│   └── ... (optional helper scripts)
+│
+├── docker-compose.yml
+└── README.md
+```
+
+<details> 
+<summary>app/backend/Dockerfile</summary>
+
+```
+FROM node:18-slim
+
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["npm", "run", "dev"]
+```
+
+#### Dockerfile Explanation
+```
+FROM node:18-slim
+```
+- Uses the official Node.js v18 slim image as the base image.
+- The slim version is lightweight and contains only essential packages, making the final image smaller.
+
+```
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+```
+- Updates the package list, installs curl, and then removes cached files to reduce image size.
+- curl is often used for debugging or downloading files during development.
+
+```
+WORKDIR /app
+```
+- Sets the working directory to /app.
+- If the directory doesn’t exist, it will be created.
+- All subsequent instructions like COPY, RUN, etc. will be executed from this directory.
+
+```
+COPY package*.json ./
+```
+- Copies package.json and package-lock.json into the container.
+- This allows Docker to cache dependencies and avoid reinstalling them unless these files change.
+
+```
+RUN npm install
+```
+- Installs all dependencies listed in package.json.
+
+```
+COPY . .
+```
+- Copies all remaining files from the host machine into the container's /app directory.
+
+```
+EXPOSE 8080
+```
+- Documents that the application inside the container will run on port 8080.
+- This does not publish the port. It's just metadata for tools like Docker Compose
+
+```
+CMD ["npm", "run", "dev"]
+```
+- Defines the default command to run when the container starts.
+- In this case, it starts the app using nodemon
+</details>
+
+
+<details> 
+<summary>app/frontend/Dockerfile</summary>
+
+```
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+RUN apk add --no-cache curl
+
+COPY . .
+
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+#### Dockerfile Explanation
+
+```
+FROM node:18-alpine
+```
+- Uses the official Node.js version 18 based on the Alpine Linux distribution.
+- alpine is a minimal image, reducing the size significantly.
+- Ideal for frontend apps where keeping the image lightweight is important.
+
+```
+WORKDIR /app
+```
+- Sets the working directory inside the container to /app.
+- All following commands (like COPY, RUN, etc.) will execute from this path.
+
+```
+COPY package*.json ./
+```
+- Copies both package.json and package-lock.json into the container.
+- This allows Docker to cache npm install, speeding up rebuilds if dependencies haven’t changed.
+
+```
+RUN npm install
+```
+- Installs all Node.js dependencies listed in package.json.
+- Since only the package*.json files were copied earlier, this layer is cached until those files change.
+
+```
+RUN apk add --no-cache curl
+```
+- Installs curl using Alpine's package manager apk.
+- The --no-cache flag avoids storing cache files, keeping the image small.
+- curl may be used for health checks, debugging, or testing APIs from within the container.
+
+
+```
+COPY . .
+```
+- Copies the entire frontend project (including src, public, etc.) into the /app folder in the container.
+
+```
+EXPOSE 3000
+```
+- Documents that the application runs on port 3000 inside the container.
+- Does not publish the port automatically —> this must be done with -p or in docker-compose.yml.
+
+```
+CMD ["npm", "start"]
+```
+- Specifies the default command to run when the container starts.
+- Typically, npm start runs the React development server (e.g., react-scripts start).
+
+</details>
+
+
+<details> 
+<summary>app/backend/docker-compose.yml</summary>
+
+```
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    # volumes:
+    #   - ./backend:/app
+    #   - /app/node_modules
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - appnet
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FRONTEND_PORT}"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - appnet
+
+
+  mongo:
+    image: mongo
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+    env_file:
+      - .env
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    networks:
+      - appnet
+
+volumes:
+  mongo-data:
+
+
+networks:
+  appnet:
+    driver: bridge
+```
+
+</details>
 
 
 ### CI/CD Pipeline
