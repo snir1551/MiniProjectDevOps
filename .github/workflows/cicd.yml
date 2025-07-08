@@ -62,6 +62,7 @@ jobs:
     uses: ./.github/workflows/deploy-app.yml
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
+      environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
     secrets: inherit
 
 
