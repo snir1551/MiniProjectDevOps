@@ -29,7 +29,7 @@ jobs:
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
       - name: Docker Compose Up
-        run: docker compose -f docker-compose.yml up -d --build
+        run: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
       - name: Wait for Backend to be healthy
         id: backend_health_check
@@ -117,7 +117,7 @@ jobs:
 
       - name: Docker Compose Down
         if: always()
-        run: docker compose down -v
+        run: docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 
       - name: Delete .env file
         if: always()
