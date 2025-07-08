@@ -1641,7 +1641,7 @@ https://github.com/snir1551/MiniProjectDevOps/blob/main/.github/workflows/cicd.y
 
 
 <details> 
-<summary>deploy-app</summary>
+<summary>Healthcheck</summary>
 
 ```
 name: Post-Reboot Healthcheck on App Ports Task9
@@ -1694,7 +1694,7 @@ jobs:
 -------------------------------
 
 <details> 
-<summary>deploy-app</summary>
+<summary>Deploy-App</summary>
 
 ```
 name: Deploy to Azure VM 
