@@ -2,12 +2,8 @@ version: "3.8"
 
 services:
   backend:
-    build: ./backend
-    ports:
-      - "${BACKEND_PORT}:${BACKEND_PORT}"
-    # volumes:
-    #   - ./backend:/app
-    #   - /app/node_modules
+    build:
+      context: ./backend
     env_file:
       - .env
     depends_on:
@@ -22,11 +18,8 @@ services:
       - appnet
 
   frontend:
-    build: ./frontend
-    ports:
-      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
-    # volumes:
-    #   - ./frontend:/app
+    build:
+      context: ./frontend
     env_file:
       - .env
     depends_on:
@@ -41,16 +34,13 @@ services:
     networks:
       - appnet
 
-  
 
   mongo:
-    image: mongo
-    ports:
-      - "${MONGO_PORT}:${MONGO_PORT}"
-    env_file:
-      - .env
+    image: mongo:6.0
     volumes:
       - mongo-data:/data/db
+    env_file:
+      - .env
     restart: unless-stopped
     networks:
       - appnet
