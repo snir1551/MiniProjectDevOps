@@ -34,7 +34,8 @@ This project demonstrates how to provision and manage real-world infrastructure 
 
 ### Architecture Flow Diagram 
 
-![miniproject drawio (1)](https://github.com/user-attachments/assets/f7e913ba-7935-4103-a661-c7366b1697a1)
+![miniproject drawio (2)](https://github.com/user-attachments/assets/1220cacd-b9af-40c3-b9dc-2322c5c37621)
+
 
 
 
@@ -1633,4 +1634,188 @@ https://github.com/snir1551/MiniProjectDevOps/blob/main/.github/workflows/cicd.y
 
 ### Healthchecks & Automation
 
+
+
+
+
+
+
+<details> 
+<summary>deploy-app</summary>
+
+```
+name: Post-Reboot Healthcheck on App Ports Task9
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      vm_ip:
+        required: true
+        type: string
+  
+
+jobs:
+  check-access:
+    runs-on: ubuntu-latest
+
+    steps:
+        
+      - name: Check HTTP access on port 3000 (Frontend)
+        run: |
+          echo "Checking http://${{ inputs.vm_ip }}:3000 ..." > access-check.log
+          if curl --fail --silent http://${{ inputs.vm_ip }}:3000; then
+            echo "Port 3000 is accessible." >> access-check.log
+          else
+            echo "Port 3000 is NOT accessible." >> access-check.log
+            exit 1
+          fi
+
+      - name: Check HTTP access on port 8080 (Backend)
+        run: |
+          echo "Checking http://${{ inputs.vm_ip }}:8080 ..." >> access-check.log
+          if curl --fail --silent http://${{ inputs.vm_ip }}:8080; then
+            echo "Port 8080 is accessible." >> access-check.log
+          else
+            echo "Port 8080 is NOT accessible." >> access-check.log
+            exit 1
+          fi
+
+      - name: Upload access check log
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-reboot-healthcheck-log
+          path: access-check.log
+```
+
+</details>
+
+
+-------------------------------
+
+<details> 
+<summary>deploy-app</summary>
+
+```
+name: Deploy to Azure VM 
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      vm_ip:
+        required: true
+        type: string
+      environment:
+        description: "Environment (dev/prod)"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.VM_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > app/.env
+          echo "REACT_APP_API_URL=http://${{ inputs.vm_ip }}:8080" >> app/.env
+
+      - name: Clean Docker on VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
+            echo 'Cleaning Docker environment...'
+
+            containers=\$(docker ps -q)
+            if [ -n \"\$containers\" ]; then
+              echo 'Stopping running containers...'
+              docker stop \$containers
+            else
+              echo 'No running containers to stop.'
+            fi
+
+            sudo docker container prune -f
+            sudo docker image prune -af
+            sudo docker network prune -f
+
+            volumes=\$(docker volume ls -q)
+            if [ -n \"\$volumes\" ]; then
+              echo 'Removing all Docker volumes...'
+              docker volume rm \$volumes
+            else
+              echo 'No Docker volumes to remove.'
+            fi
+          "
+
+      - name: Debug SSH command
+        run: echo "ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }}"
+
+      - name: Sync app folder to Azure VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "mkdir -p /home/azureuser/MiniProject/app"
+          rsync -az --delete --exclude='.git' --exclude='node_modules' -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./app/ azureuser@${{ inputs.vm_ip }}:/home/azureuser/MiniProject/app/
+
+      - name: Run setup script on VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} << 'EOF'
+            cd /home/azureuser/MiniProject/app/scripts
+            chmod +x setup.sh
+            ./setup.sh
+          EOF
+
+      - name: Deploy with Docker Compose
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
+            cd /home/azureuser/MiniProject/app &&
+            sudo docker-compose -f docker-compose.yml -f docker-compose.${ENVIRONMENT}.yml down --remove-orphans
+            sudo docker-compose -f docker-compose.yml -f docker-compose.${ENVIRONMENT}.yml up -d --build
+          "
+
+      - name: Healthcheck and get logs
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
+            sudo docker ps
+          " > remote_logs.txt
+
+      - name: Logs from Azure VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
+            cd /home/azureuser/MiniProject/app
+            sudo docker-compose ps
+            sudo docker-compose logs --tail=50
+          " > remote_logs.txt
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-logs
+          path: remote_logs.txt
+
+      - name: Cleanup SSH key
+        run: rm key.pem
+
+      - name: Cleanup .env file
+        if: always()
+        run: rm -f app/.env
+```
+
+</details>
+
+
+
+
+
+### Resilience Check
+
+![image](https://github.com/user-attachments/assets/c622f48f-0289-4823-b2a9-77c9cd63cbaf)
 
