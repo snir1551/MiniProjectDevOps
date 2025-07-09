@@ -34,7 +34,8 @@ This project demonstrates how to provision and manage real-world infrastructure 
 
 ### Architecture Flow Diagram 
 
-![miniproject drawio (2)](https://github.com/user-attachments/assets/1220cacd-b9af-40c3-b9dc-2322c5c37621)
+![miniproject drawio](https://github.com/user-attachments/assets/5ce201cf-25aa-48be-9e66-4f885e383402)
+
 
 
 
