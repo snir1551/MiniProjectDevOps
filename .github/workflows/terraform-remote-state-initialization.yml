@@ -12,7 +12,7 @@ on:
 jobs:
   setup-backend:
     name: Create Storage Account + Container for Terraform State
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Azure Login
