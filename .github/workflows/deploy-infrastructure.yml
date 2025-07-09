@@ -20,7 +20,7 @@ on:
 jobs:
   terraform:
     name: Terraform Setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       vm_ip: ${{ steps.vm_ip.outputs.vm_ip }}
     defaults:
