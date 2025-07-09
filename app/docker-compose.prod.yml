@@ -7,7 +7,7 @@ services:
       - "8080:8080" 
 
   frontend:
-    command: npm run build
+    command: npm start
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
 
