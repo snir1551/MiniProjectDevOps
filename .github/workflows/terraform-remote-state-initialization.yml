@@ -27,7 +27,7 @@ jobs:
           echo "ENVIRONMENT: $ENVIRONMENT"
           echo "CONTAINER_NAME: tfstate-${ENVIRONMENT}"
           RESOURCE_GROUP="${ENVIRONMENT}-rg"
-          STORAGE_ACCOUNT="mtcstatetf" # MUST be globally unique
+          STORAGE_ACCOUNT="mtcstatetf${ENVIRONMENT}" # MUST be globally unique
           CONTAINER_NAME="tfstate-${ENVIRONMENT}"
           LOCATION="israelcentral"
 
