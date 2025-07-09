@@ -3,7 +3,7 @@ terraform {
     resource_group_name  = "dev-rg"
     storage_account_name = "mtcstatetf"
     container_name       = "tfstate-dev"
-    key                  = "terraform.tfstate"
+    key                  = "terraform.dev.tfstate"
   }
 }
 
