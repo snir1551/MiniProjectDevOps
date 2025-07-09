@@ -29,7 +29,6 @@ jobs:
           RESOURCE_GROUP="${ENVIRONMENT}-rg"
           STORAGE_ACCOUNT="mtcstatetf" # MUST be globally unique
           CONTAINER_NAME="tfstate-${ENVIRONMENT}"
-          ACCOUNT_KEY="terraform.${ENVIRONMENT}.tfstate"
           LOCATION="israelcentral"
 
           echo "Checking for existing resource group..."
