@@ -2,15 +2,17 @@ version: "3.8"
 
 services:
   backend:
+    image: snir1551/backend:${BACKEND_TAG}
     command: npm start
     ports:
-      - "8080:8080" 
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
 
   frontend:
+    image: snir1551/frontend:${FRONTEND_TAG}
     command: npm start
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
 
   mongo:
     ports:
-      - "27017:27017"  
+      - "${MONGO_PORT}:${MONGO_PORT}" 
