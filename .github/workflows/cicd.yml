@@ -24,13 +24,13 @@ jobs:
   backend-tests:
     uses: ./.github/workflows/backend-test.yml
 
-  docker-up:
-    if: ${{ inputs.environment == 'dev' }}
-    needs: [frontend-tests, backend-tests]
-    uses: ./.github/workflows/build.yml
-    with:
-      environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
-    secrets: inherit
+  # docker-up:
+  #   if: ${{ inputs.environment == 'dev' }}
+  #   needs: [frontend-tests, backend-tests]
+  #   uses: ./.github/workflows/build.yml
+  #   with:
+  #     environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
+  #   secrets: inherit
 
   push-images:
     needs: [backend-tests, frontend-tests]
@@ -53,7 +53,6 @@ jobs:
 
 
   terraform-remote-state-initialization:
-    needs: docker-up
     uses: ./.github/workflows/terraform-remote-state-initialization.yml
     with:
       environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
@@ -83,6 +82,8 @@ jobs:
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
       environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
+      frontend_tag: ${{ needs.push-images.outputs.frontend_tag }}
+      backend_tag: ${{ needs.push-images.outputs.backend_tag }}
     secrets: inherit
 
   reboot-vm:
