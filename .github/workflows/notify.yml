@@ -12,12 +12,12 @@ on:
       frontend_test_status:
         required: true
         type: string
-      backend_health:
-        required: true
-        type: string
-      frontend_health:
-        required: true
-        type: string
+      # backend_health:
+      #   required: true
+      #   type: string
+      # frontend_health:
+      #   required: true
+      #   type: string
     secrets:
       SLACK_WEBHOOK_URL:
         required: true
