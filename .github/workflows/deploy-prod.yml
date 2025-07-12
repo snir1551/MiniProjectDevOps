@@ -1,0 +1,92 @@
+name: Deploy to Azure VM
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      vm_ip:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      frontend_tag:
+        required: false
+        type: string
+      backend_tag:
+        required: false
+        type: string
+
+jobs:
+  deploy-prod:
+      if: ${{ inputs.environment == 'prod' }}
+      runs-on: ubuntu-22.04
+  
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+  
+        - name: Write SSH key
+          run: |
+            echo "${{ secrets.VM_SSH_KEY }}" > key.pem
+            chmod 600 key.pem
+  
+        - name: Create .env file
+          run: |
+            echo "${{ secrets.ENV_FILE }}" > app/.env
+            echo "REACT_APP_API_URL=http://${{ inputs.vm_ip }}:8080" >> app/.env
+  
+        - name: Sync only needed files for prod
+          run: |
+            ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
+              sudo mkdir -p /home/azureuser/MiniProject/app &&
+              sudo chown -R azureuser:azureuser /home/azureuser/MiniProject/app
+            "
+  
+            rsync -az --delete \
+              --include='docker-compose*.yml' \
+              --include='.env' \
+              --include='scripts/***' \
+              --exclude='*' \
+              -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
+              ./app/ azureuser@${{ inputs.vm_ip }}:/home/azureuser/MiniProject/app/
+  
+        - name: Run setup script on VM
+          run: |
+            ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} << 'EOF'
+              cd /home/azureuser/MiniProject/app/scripts
+              chmod +x setup.sh
+              ./setup.sh
+            EOF
+  
+        - name: Deploy containers for prod
+          run: |
+            ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} <<EOF
+              cd /home/azureuser/MiniProject/app
+  
+              export FRONTEND_TAG=${{ inputs.frontend_tag }}
+              export BACKEND_TAG=${{ inputs.backend_tag }}
+  
+              sudo -E docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+              sudo -E docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+            EOF
+  
+        - name: Get logs
+          run: |
+            ssh -i key.pem azureuser@${{ inputs.vm_ip }} <<EOF > remote_logs.txt
+              cd /home/azureuser/MiniProject/app
+              sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+              sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=50
+            EOF
+  
+        - name: Upload logs
+          uses: actions/upload-artifact@v4
+          with:
+            name: prod-logs
+            path: remote_logs.txt
+  
+        - name: Cleanup
+          if: always()
+          run: |
+            rm -f key.pem
+            rm -f app/.env
