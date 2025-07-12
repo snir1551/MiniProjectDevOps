@@ -2,8 +2,6 @@ version: "3.8"
 
 services:
   backend:
-    build:
-      context: ./backend
     env_file:
       - .env
     depends_on:
@@ -18,8 +16,6 @@ services:
       - appnet
 
   frontend:
-    build:
-      context: ./frontend
     env_file:
       - .env
     depends_on:
