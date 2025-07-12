@@ -78,7 +78,7 @@ jobs:
   deploy-prod:
     if: ${{ inputs.environment == 'prod' }}
     needs: [deploy-infrastructure, push-images]
-    uses: ./.github/workflows/deploy-app.yml
+    uses: ./.github/workflows/deploy-prod.yml
     with:
       vm_ip: ${{ needs.deploy-infrastructure.outputs.vm_ip }}
       environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
