@@ -11,10 +11,10 @@ on:
         required: true
         type: string
       frontend_tag:
-        required: false
+        required: true
         type: string
-      backend_tag:
-        required: false
+      backend_tag: 
+        required: true
         type: string
 
 jobs:
