@@ -2,6 +2,8 @@ version: "3.8"
 
 services:
   backend:
+    build:
+      context: ./backend
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     volumes:
@@ -10,6 +12,8 @@ services:
     command: npm run dev
 
   frontend:
+    build:
+      context: ./frontend
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     volumes:
