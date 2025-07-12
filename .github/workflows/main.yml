@@ -1,0 +1,99 @@
+name: Push Docker Images to Docker Hub
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_TOKEN:
+        required: true
+    outputs:
+      frontend_tag:
+        description: "Frontend image tag"
+        value: ${{ jobs.push.outputs.frontend_tag }}
+      backend_tag:
+        description: "Backend image tag"
+        value: ${{ jobs.push.outputs.backend_tag }}
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    outputs:
+      frontend_tag: ${{ steps.frontend-hash.outputs.hash }}
+      backend_tag: ${{ steps.backend-hash.outputs.hash }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+
+      # - name: Check for frontend changes
+      #   id: frontend-changes
+      #   run: |
+      #     git fetch origin main
+      #     if git diff --quiet origin/main HEAD -- ./app/frontend; then
+      #       echo "changed=false" >> $GITHUB_OUTPUT
+      #     else
+      #       echo "changed=true" >> $GITHUB_OUTPUT
+      #     fi
+
+      # - name: Check for backend changes
+      #   id: backend-changes
+      #   run: |
+      #     git fetch origin main
+      #     if git diff --quiet origin/main HEAD -- ./app/backend; then
+      #       echo "changed=false" >> $GITHUB_OUTPUT
+      #     else
+      #       echo "changed=true" >> $GITHUB_OUTPUT
+      #     fi
+
+      - name: Compute frontend hash
+        id: frontend-hash
+        run: |
+          echo "hash=$(git ls-files ./app/frontend | sort | xargs cat | sha256sum | cut -c1-12)" >> $GITHUB_OUTPUT
+
+      - name: Compute backend hash
+        id: backend-hash
+        run: |
+          echo "hash=$(git ls-files ./app/backend | sort | xargs cat | sha256sum | cut -c1-12)" >> $GITHUB_OUTPUT
+
+      - name: Check if frontend image already exists
+        id: frontend-image-check
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/frontend/tags/${{ steps.frontend-hash.outputs.hash }})
+          if [ "$status" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if backend image exists
+        id: backend-image-check
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/backend/tags/${{ steps.backend-hash.outputs.hash }})
+          if [ "$status" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+
+      - name: Build and push frontend
+        if: steps.frontend-image-check.outputs.exists == 'false'
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend:${{ steps.frontend-hash.outputs.hash }} ./app/frontend
+          docker push ${{ secrets.DOCKER_USERNAME }}/frontend:${{ steps.frontend-hash.outputs.hash }}
+
+      - name: Build and push backend
+        if: steps.backend-image-check.outputs.exists == 'false'
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:${{ steps.backend-hash.outputs.hash }} ./app/backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend:${{ steps.backend-hash.outputs.hash }}
